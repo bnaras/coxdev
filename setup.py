@@ -62,7 +62,7 @@ EXTS=[Extension(
     include_dirs=[pybind11.get_include(),
                   eigendir],
     language='c++',
-    extra_compile_args=['-std=c++17'])]
+    extra_compile_args=['-std=c++17', '-DPY_INTERFACE=1'])]
 
 
 cmdclass = versioneer.get_cmdclass()
