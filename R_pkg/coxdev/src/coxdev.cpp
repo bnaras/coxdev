@@ -134,6 +134,15 @@ double compute_sat_loglik(const Eigen::Map<Eigen::VectorXi> first,
 			  const Eigen::Map<Eigen::VectorXd> status,
 			  Eigen::Map<Eigen::VectorXd> W_status)
 {
+
+#ifdef DEBUG
+  Rcpp::Rcout << first;
+  Rcpp::Rcout << last;
+  Rcpp::Rcout << weight;
+  Rcpp::Rcout << event_order;
+  Rcpp::Rcout << status;
+  Rcpp::Rcout << W_status;
+#endif
   
   Eigen::VectorXd weight_event_order_times_status(event_order.size());
   for (int i = 0; i < event_order.size(); ++i) {
@@ -504,31 +513,34 @@ double cox_dev(const Eigen::Map<Eigen::VectorXd> eta, //eta is in native order  
 
 
 // [[Rcpp::export(.hessian_matvec)]]
-void hessian_matvec(const Eigen::Map<Eigen::VectorXd> arg, // # arg is in native order
-                    const Eigen::Map<Eigen::VectorXd> eta, // # eta is in native order 
-                    const Eigen::Map<Eigen::VectorXd> sample_weight, //# sample_weight is in native order
-                    const Eigen::Map<Eigen::VectorXd> risk_sums,
-                    const Eigen::Map<Eigen::VectorXd> diag_part,
-                    const Eigen::Map<Eigen::VectorXd> w_avg,
-                    const Eigen::Map<Eigen::VectorXd> exp_w,
-                    const Eigen::Map<Eigen::VectorXd> event_cumsum,
-                    const Eigen::Map<Eigen::VectorXd> start_cumsum,
-                    const Eigen::Map<Eigen::VectorXi> event_order,   
-                    const Eigen::Map<Eigen::VectorXi> start_order,
-                    const Eigen::Map<Eigen::VectorXd> status, // # everything below in event order
-                    const Eigen::Map<Eigen::VectorXi> first,
-                    const Eigen::Map<Eigen::VectorXi> last,
-                    const Eigen::Map<Eigen::VectorXd> scaling,
-                    const Eigen::Map<Eigen::VectorXi> event_map,
-                    const Eigen::Map<Eigen::VectorXi> start_map,
-		    Rcpp::List risk_sum_buffers,
-                    Rcpp::List forward_cumsum_buffers,
-                    Eigen::Map<Eigen::VectorXd> forward_scratch_buffer,
-		    Rcpp::List reverse_cumsum_buffers,
-                    Eigen::Map<Eigen::VectorXd> hess_matvec_buffer,
-                    bool have_start_times = true,
-                    bool efron = false) {
-
+Eigen::VectorXd hessian_matvec(const Eigen::Map<Eigen::VectorXd> arg, // # arg is in native order
+			       const Eigen::Map<Eigen::VectorXd> eta, // # eta is in native order 
+			       const Eigen::Map<Eigen::VectorXd> sample_weight, //# sample_weight is in native order
+			       const Eigen::Map<Eigen::VectorXd> risk_sums,
+			       const Eigen::Map<Eigen::VectorXd> diag_part,
+			       const Eigen::Map<Eigen::VectorXd> w_avg,
+			       const Eigen::Map<Eigen::VectorXd> exp_w,
+			       const Eigen::Map<Eigen::VectorXd> event_cumsum,
+			       const Eigen::Map<Eigen::VectorXd> start_cumsum,
+			       const Eigen::Map<Eigen::VectorXi> event_order,   
+			       const Eigen::Map<Eigen::VectorXi> start_order,
+			       const Eigen::Map<Eigen::VectorXd> status, // # everything below in event order
+			       const Eigen::Map<Eigen::VectorXi> first,
+			       const Eigen::Map<Eigen::VectorXi> last,
+			       const Eigen::Map<Eigen::VectorXd> scaling,
+			       const Eigen::Map<Eigen::VectorXi> event_map,
+			       const Eigen::Map<Eigen::VectorXi> start_map,
+			       Rcpp::List risk_sum_buffers,
+			       Rcpp::List forward_cumsum_buffers,
+			       Eigen::Map<Eigen::VectorXd> forward_scratch_buffer,
+			       Rcpp::List reverse_cumsum_buffers,
+			       Eigen::Map<Eigen::VectorXd> hess_matvec_buffer,
+			       bool have_start_times = true,
+			       bool efron = false) {
+  
+  std::cout << "arg.size " << arg.size() << std::endl;
+  std::cout << "exp_w.size " << exp_w.size() << std::endl;
+  std::cout << arg << std::endl;
   
   Eigen::VectorXd exp_w_times_arg = exp_w.array() * arg.array();
   Eigen::Map<Eigen::VectorXd> exp_w_times_arg_map(exp_w_times_arg.data(), exp_w_times_arg.size());
@@ -615,11 +627,13 @@ void hessian_matvec(const Eigen::Map<Eigen::VectorXd> arg, // # arg is in native
   to_native_from_event(hess_matvec_buffer, event_order, forward_scratch_buffer);
 
   // Eigen::VectorXd buffer = hess_matvec_buffer.array() * exp_w.array();
-  hess_matvec_buffer = hess_matvec_buffer.array() * exp_w.array() - (diag_part.array() * arg.array());
+  // hess_matvec_buffer = hess_matvec_buffer.array() * exp_w.array() - (diag_part.array() * arg.array());
+  Eigen::VectorXd result = hess_matvec_buffer.array() * exp_w.array() - (diag_part.array() * arg.array());
 #ifdef DEBUG
   std::cout << "hess_matvec_buffer" << std::endl;
   std::cout << hess_matvec_buffer << std::endl;
 #endif
+  return(result);
 }
   
 

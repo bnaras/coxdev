@@ -22,7 +22,7 @@
 }
 
 .compute_sat_loglik <- function(first, last, weight, event_order, status, W_status) {
-    .Call(`_coxdev_compute_sat_loglik`, first, last, weight, event_order, status, W_status)
+    .Call(`_coxdev_compute_sat_loglik`, first, last, weight, event_order, status, W_status, PACKAGE="coxdev")
 }
 
 .sum_over_events <- function(event_order, start_order, first, last, start_map, scaling, status, efron, forward_cumsum_buffers, forward_scratch_buffer, value_buffer) {

@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from coxdev import CoxDeviance
-import pdb
 
 try:
     import rpy2.robjects as rpy
@@ -96,6 +95,7 @@ def get_coxph(event,
             rpy.r('y = Surv(start, event, status)')
         else:
             rpy.r('y = Surv(event, status)')
+        rpy.r('saveRDS(list(event = event, status = status, X = X, beta = beta, weights = sample_weight, ties = ties), file = "out100.RDS")')
         rpy.r('F = coxph(y ~ X, init=beta, weights=sample_weight, control=coxph.control(iter.max=0), ties=ties, robust=FALSE)')
         rpy.r('score = colSums(coxph.detail(F)$scor)')
         G = rpy.r('score')
@@ -104,14 +104,10 @@ def get_coxph(event,
     return -2 * G, -2 * D, cov
 
 
-@pytest.mark.parametrize('tie_types', all_combos)
-@pytest.mark.parametrize('tie_breaking', ['efron', 'breslow'])
-@pytest.mark.parametrize('sample_weight', [np.ones, sample_weights])
-@pytest.mark.parametrize('have_start_times', [True, False])
-def test_coxph(tie_types,
-               tie_breaking,
-               sample_weight,
-               have_start_times,
+def test_coxph(tie_types = all_combos[100],
+               tie_breaking = 'breslow',
+               sample_weight = np.ones,
+               have_start_times = False,
                nrep=5,
                size=5,
                tol=1e-10):
@@ -124,9 +120,6 @@ def test_coxph(tie_types,
         start = data['start']
     else:
         start = None
-
-    # where = "test_coxph"
-    # pdb.set_trace()
     coxdev = CoxDeviance(event=data['event'],
                          start=start,
                          status=data['status'],
@@ -158,65 +151,18 @@ def test_coxph(tie_types,
                             ties=tie_breaking,
                             X=X)
 
-    print(D_coxph, C.deviance - 2 * C.loglik_sat)
+    print(f'C.deviance= {C.deviance},  C.loglik_sat = {C.loglik_sat}')
+    print(f'D_coxph = {D_coxph}, calculated = {C.deviance - 2 * C.loglik_sat}')
     assert np.allclose(D_coxph[0], C.deviance - 2 * C.loglik_sat)
     delta_ph = np.linalg.norm(G_coxph - X.T @ C.gradient) / np.linalg.norm(X.T @ C.gradient)
     assert delta_ph < tol
     assert np.linalg.norm(cov_ - cov_coxph) / np.linalg.norm(cov_) < tol
+    return C
 
-def test_simple(nrep=5,
-                size=5,
-                tol=1e-10):
-    test_coxph(all_combos[-1],
-               'efron',
-               sample_weights,
-               True,
-               nrep=5,
-               size=5,
-               tol=1e-10)
-    
+m = test_coxph()
+import pickle   
 
-@pytest.mark.parametrize('tie_types', all_combos)
-@pytest.mark.parametrize('sample_weight', [np.ones, sample_weights])
-@pytest.mark.parametrize('have_start_times', [True, False])
-def test_glmnet(tie_types,
-                sample_weight,
-                have_start_times,
-                nrep=5,
-                size=5,
-                tol=1e-10):
-
-    data = simulate_df(tie_types,
-                       nrep,
-                       size)
-
-    # where = "test_glmnet"    
-    # pdb.set_trace()
-    
-    n = data.shape[0]
-    eta = rng.standard_normal(n)
-    weight = sample_weight(n)
-    
-    if have_start_times:
-        start = data['start']
-    else:
-        start = None
-    D_R, G_R, H_R = get_glmnet_result(data['event'],
-                                      data['status'],
-                                      start,
-                                      eta,
-                                      weight)
-
-    coxdev = CoxDeviance(event=data['event'],
-                         start=start,
-                         status=data['status'],
-                         tie_breaking='breslow')
-    C = coxdev(eta,
-               weight)
-
-    delta_D = np.fabs(D_R - C.deviance) / np.fabs(D_R)
-    delta_G = np.linalg.norm(G_R - C.gradient) / np.linalg.norm(G_R)
-    delta_H = np.linalg.norm(H_R - C.diag_hessian) / np.linalg.norm(H_R)
-
-    assert (delta_D < tol) and (delta_G < tol) and (delta_H < tol)
-    
+# fileObj = open('data.obj', 'rb')
+# exampleObj = pickle.load(fileObj)
+# fileObj.close()
+# print(exampleObj)

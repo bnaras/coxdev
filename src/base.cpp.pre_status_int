@@ -157,7 +157,7 @@ void to_event_from_native(const EIGEN_REF<Eigen::VectorXd> arg,
 #ifdef R_INTERFACE
 // [[Rcpp::export(.forward_prework)]]
 #endif
-void forward_prework(const EIGEN_REF<Eigen::VectorXi> status,
+void forward_prework(const EIGEN_REF<Eigen::VectorXd> status,
                      const EIGEN_REF<Eigen::VectorXd> w_avg,
                      const EIGEN_REF<Eigen::VectorXd> scaling,
                      const EIGEN_REF<Eigen::VectorXd> risk_sums,
@@ -169,9 +169,9 @@ void forward_prework(const EIGEN_REF<Eigen::VectorXi> status,
 {
   // No checks on size compatibility yet.
   if (use_w_avg) {
-    moment_buffer = status.cast<double>().array() * w_avg.array() * scaling.array().pow(i) / risk_sums.array().pow(j);
+    moment_buffer = status.array() * w_avg.array() * scaling.array().pow(i) / risk_sums.array().pow(j);
   } else {
-    moment_buffer = status.cast<double>().array() * scaling.array().pow(i) / risk_sums.array().pow(j);    
+    moment_buffer = status.array() * scaling.array().pow(i) / risk_sums.array().pow(j);    
   }
   if (arg.size() > 0) {
     moment_buffer = moment_buffer.array() * arg.array();
@@ -185,7 +185,7 @@ double compute_sat_loglik(const EIGEN_REF<Eigen::VectorXi> first,
 			  const EIGEN_REF<Eigen::VectorXi> last,
 			  const EIGEN_REF<Eigen::VectorXd> weight, // in natural order!!!
 			  const EIGEN_REF<Eigen::VectorXi> event_order,
-			  const EIGEN_REF<Eigen::VectorXi> status,
+			  const EIGEN_REF<Eigen::VectorXd> status,
 			  EIGEN_REF<Eigen::VectorXd> W_status)
 {
   
@@ -224,7 +224,7 @@ void sum_over_events(const EIGEN_REF<Eigen::VectorXi> event_order,
                      const EIGEN_REF<Eigen::VectorXi> last,
                      const EIGEN_REF<Eigen::VectorXi> start_map,
                      const EIGEN_REF<Eigen::VectorXd> scaling,
-                     const EIGEN_REF<Eigen::VectorXi> status,
+                     const EIGEN_REF<Eigen::VectorXd> status,
                      bool efron,
 		     BUFFER_LIST(forward_cumsum_buffers), // List of vectors for scratch space.
 		     EIGEN_REF<Eigen::VectorXd> forward_scratch_buffer,
@@ -333,7 +333,7 @@ double cox_dev(const EIGEN_REF<Eigen::VectorXd> eta, //eta is in native order  -
 	       const EIGEN_REF<Eigen::VectorXd> exp_w,
 	       const EIGEN_REF<Eigen::VectorXi> event_order,   
 	       const EIGEN_REF<Eigen::VectorXi> start_order,
-	       const EIGEN_REF<Eigen::VectorXi> status,        //everything below in event order
+	       const EIGEN_REF<Eigen::VectorXd> status,        //everything below in event order
 	       const EIGEN_REF<Eigen::VectorXi> first,
 	       const EIGEN_REF<Eigen::VectorXi> last,
 	       const EIGEN_REF<Eigen::VectorXd> scaling,
@@ -429,8 +429,8 @@ double cox_dev(const EIGEN_REF<Eigen::VectorXd> eta, //eta is in native order  -
     w_avg_buffer(i) = (forward_cumsum_buffers0(last(i) + 1) - forward_cumsum_buffers0(first(i))) / ((double) (last(i) + 1 - first(i)));
   }
   // w_avg = w_avg_buffer # shorthand
-  double loglik = ( w_event.array() * eta_event.array() * status.cast<double>().array() ).sum() -
-		   ( risk_sums.array().log() * w_avg_buffer.array() * status.cast<double>().array() ).sum();
+  double loglik = ( w_event.array() * eta_event.array() * status.array() ).sum() -
+		   ( risk_sums.array().log() * w_avg_buffer.array() * status.array() ).sum();
     
   // forward cumsums for gradient and Hessian
   
@@ -506,7 +506,7 @@ double cox_dev(const EIGEN_REF<Eigen::VectorXd> eta, //eta is in native order  -
   // # save a reorder of w * exp(eta)
   
   diag_part_buffer = exp_eta_w_event.array() * T_1_term.array();
-  grad_buffer = w_event.array() * status.cast<double>().array() - diag_part_buffer.array();
+  grad_buffer = w_event.array() * status.array() - diag_part_buffer.array();
   grad_buffer.array() *= -2.0;
   
   // # now the diagonal of the Hessian
@@ -536,7 +536,7 @@ void hessian_matvec(const EIGEN_REF<Eigen::VectorXd> arg, // # arg is in native 
                     const EIGEN_REF<Eigen::VectorXd> start_cumsum,
                     const EIGEN_REF<Eigen::VectorXi> event_order,   
                     const EIGEN_REF<Eigen::VectorXi> start_order,
-                    const EIGEN_REF<Eigen::VectorXi> status, // # everything below in event order
+                    const EIGEN_REF<Eigen::VectorXd> status, // # everything below in event order
                     const EIGEN_REF<Eigen::VectorXi> first,
                     const EIGEN_REF<Eigen::VectorXi> last,
                     const EIGEN_REF<Eigen::VectorXd> scaling,
@@ -592,7 +592,7 @@ void hessian_matvec(const EIGEN_REF<Eigen::VectorXd> arg, // # arg is in native 
   // # forward_scratch_buffer[:] = status * w_avg * E_arg / risk_sums
 
   // # one less step to compute from above representation
-  forward_scratch_buffer = ( status.cast<double>().array() * w_avg.array() * risk_sums_arg.array() ) / risk_sums.array().pow(2);
+  forward_scratch_buffer = ( status.array() * w_avg.array() * risk_sums_arg.array() ) / risk_sums.array().pow(2);
 
 #ifdef DEBUG
   std::cout << "forward_scratch_buffer" << std::endl;

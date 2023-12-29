@@ -11,12 +11,14 @@ __version__ = _version.get_versions()['version']
 import numpy as np
 from joblib import hash
 
+import pickle as pk
+import pdb
 # what = 'C++'  ## default python version of code
 # import os
 # if os.getenv('PY') == 'false':
 print("Using C++ code")
 ## what = 'C++'
-from coxc import cox_dev as _cox_dev, hessian_matvec as _hessian_matvec, compute_sat_loglik as _compute_sat_loglik
+from coxc import cox_dev as _cox_dev, hessian_matvec as _hessian_matvec, compute_sat_loglik as _compute_sat_loglik, preproc as c_preprocess
 # else:
 #     print("Using Python code")
 #     from .base import (_cox_dev,
@@ -50,20 +52,21 @@ class CoxDeviance(object):
                       start=None):
 
         event = np.asarray(event)
-        status = np.asarray(status)
+        status = np.asarray(status).astype(np.int32)
         nevent = event.shape[0]
 
         if start is None:
             start = -np.ones(nevent) * np.inf
             self._have_start_times = False
         else:
+            start = np.asarray(start)
             self._have_start_times = True
-
+            
         (self._preproc,
          self._event_order,
          self._start_order) = _preprocess(start,
-                                         event,
-                                         status)
+                                          event,
+                                          status)
         self._event_order = self._event_order.astype(np.int32)
         self._start_order = self._start_order.astype(np.int32)
         
@@ -118,6 +121,7 @@ class CoxDeviance(object):
         cur_hash = hash([linear_predictor, sample_weight])
         if not hasattr(self, "_result") or self._result.__hash_args__ != cur_hash:
 
+            #pdb.set_trace()
             loglik_sat = _compute_sat_loglik(self._first,
                                              self._last,
                                              sample_weight, # in natural order
@@ -153,6 +157,38 @@ class CoxDeviance(object):
             # print(f'self._forward_scratch_buffer {self._forward_scratch_buffer.dtype}')
             # #print(f'self._reverse_cumsum_buffers {self._reverse_cumsum_buffers.dtype}')
             
+            pkl_file = open('/Users/naras/GitHub/coxdev/R_pkg/coxdev/inst/dev100.pkl', 'wb')
+            pk.dump({
+                'eta' :                               eta,
+                'sample_weight' :                     sample_weight,
+                'exp_w_buffer' :                      self._exp_w_buffer,
+                'event_order' :                       self._event_order,
+                'start_order' :                       self._start_order,
+                'status' :                            self._status,
+                'first' :                             self._first,
+                'last' :                              self._last,
+                'scaling' :                           self._scaling,
+                'event_map' :                         self._event_map,
+                'start_map' :                         self._start_map,
+                'loglik_sat' :                        loglik_sat,
+                # 'T_1_term' :                          self._T_1_term,
+                # 'T_2_term' :                          self._T_2_term,
+                # 'grad_buffer' :                       self._grad_buffer,
+                # 'diag_hessian_buffer' :               self._diag_hessian_buffer,
+                # 'diag_part_buffer' :                  self._diag_part_buffer,
+                # 'w_avg_buffer' :                      self._w_avg_buffer,
+                # 'event_reorder_buffers' :             self._event_reorder_buffers,
+                # 'risk_sum_buffers' :                  self._risk_sum_buffers, #[0] is for coxdev, [1] is for hessian...
+                # 'forward_cumsum_buffers' :            self._forward_cumsum_buffers,
+                # 'forward_scratch_buffer' :            self._forward_scratch_buffer,
+                # 'reverse_cumsum_buffers' :            self._reverse_cumsum_buffers, #[0:2] are for risk sums, [2:4] used for hessian risk*arg sums
+                'have_start_times' :                  self._have_start_times,
+                'efron' :                             self._efron
+            }, pkl_file)
+            pkl_file.close()
+
+
+
             deviance = _cox_dev(eta,
                                 sample_weight,
                                 self._exp_w_buffer,
@@ -363,7 +399,7 @@ def _preprocess(start,
     _start = event[start_order]
 
     # compute `last`
-    
+    # pdb.set_trace()
     last = []
     last_event = nevent-1
     for i, f in enumerate(_first[::-1]):
@@ -386,6 +422,15 @@ def _preprocess(start,
                'start_map':np.asarray(_start_map),
                'event_map':np.asarray(_event_map),
                'status':np.asarray(_status)}
-
+    # pkl_file = open('/Users/naras/GitHub/coxdev/R_pkg/coxdev/inst/out100.pkl', 'wb')
+    # pk.dump({
+    #     'preproc': preproc,
+    #     'event_order' : event_order,
+    #     'start_order' : start_order,
+    #     'start' : start,
+    #     'status' : status,
+    #     'event' : event
+    # }, pkl_file)
+    # pkl_file.close()
     return preproc, event_order, start_order
 

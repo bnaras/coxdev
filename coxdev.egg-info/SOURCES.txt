@@ -13,6 +13,10 @@ coxdev.egg-info/dependency_links.txt
 coxdev.egg-info/requires.txt
 coxdev.egg-info/top_level.txt
 src/base.cpp
+tests/test2.py
+tests/test_c_preproc.py
 tests/test_compareR.py
 tests/test_cumsums.py
 tests/test_naras.py
+tests/test_one.py
+tests/test_preproc.py

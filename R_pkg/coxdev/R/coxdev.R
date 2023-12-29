@@ -81,8 +81,9 @@ preprocess <- function(start, event, status) {
   # Compute `last`
   last <- numeric(0)
   last_event <- nevent - 1
-  for (i in length(s_first):1) {
-    f <- s_first[i]
+  s_first_len <- length(s_first)
+  for (i in seq_along(s_first)) {
+    f <- s_first[s_first_len - i + 1]
     last <- c(last, last_event)
     if (f - (nevent - i) == 0) {
       last_event <- f - 1
@@ -121,7 +122,7 @@ make_cox_deviance <- function(event,
                               tie_breaking = c('efron', 'breslow'),
                               weight) {
 
-  tie_breaking  <- match.arg(tie_braking)
+  tie_breaking  <- match.arg(tie_breaking)
 
   event <- as.numeric(event)
   nevent <- length(event)
@@ -135,9 +136,9 @@ make_cox_deviance <- function(event,
 
   prep_result  <- preprocess(start, event, status)
   preproc  <- prep_result[[1]]
-  event_order  <- as.integer(prep_result[[2]])
-  start_order  <- as.integer(prep_result[[3]])
-  efron  <- (tie_breaking == 'efron') && (norm(preproc[['scaling']]) > 0)
+  event_order  <- as.integer(prep_result[[2]])  - 1L  ## for C 0-based indexing!
+  start_order  <- as.integer(prep_result[[3]])  - 1L  ## for C 0-based indexing!
+  efron  <- (tie_breaking == 'efron') && (norm(matrix(preproc$scaling), "2") > 0)
   status <- as.numeric(preproc[['status']])
   event <- as.numeric(preproc[['event']])
   start <- as.numeric(preproc[['start']])
@@ -159,14 +160,14 @@ make_cox_deviance <- function(event,
   T_1_term <- numeric(n)
   T_2_term <- numeric(n)
   # event_reorder_buffers = np.zeros((3, n))
-  event_reorder_buffers <- lapply(seq_len(3), numeric(n))
+  event_reorder_buffers <- lapply(seq_len(3), function(x) numeric(n))
   # forward_cumsum_buffers = np.zeros((5, n+1))
-  forward_cumsum_buffers <- lapply(seq_len(5), numeric(n + 1))
-  forward_scratch_buffer <- np.zeros(n)
+  forward_cumsum_buffers <- lapply(seq_len(5), function(x) numeric(n + 1))
+  forward_scratch_buffer <- numeric(n)
   # reverse_cumsum_buffers = np.zeros((4, n+1))
-  reverse_cumsum_buffers <- lapply(seq_len(4), numeric(n + 1))
+  reverse_cumsum_buffers <- lapply(seq_len(4), function(x) numeric(n + 1))
   # risk_sum_buffers = np.zeros((2, n))
-  risk_sum_buffers <- list(numeric(n), numeric(n))
+  risk_sum_buffers <- list(numeric(n), function(x) numeric(n))
   hess_matvec_buffer <- numeric(n)
   grad_buffer <- numeric(n)
   diag_hessian_buffer <- numeric(n)
@@ -215,7 +216,7 @@ make_cox_deviance <- function(event,
                           reverse_cumsum_buffers, #[1:3] are for risk sums, [4:5] used for hessian risk*arg sums
                           have_start_times,
                           efron)
-    list(linear_predictor = eta,
+    list(linear_predictor = as.numeric(eta),
          sample_weight = sample_weight,
          loglik_sat = loglik_sat,
          deviance = deviance,
@@ -223,35 +224,41 @@ make_cox_deviance <- function(event,
          diag_hessian = diag_hessian_buffer)
   }
   information  <- function(eta, sample_weight = NULL) {
-    event_cumsum <- reverse_cumsum_buffers[[1L]]
-    start_cumsum <- reverse_cumsum_buffers[[2L]]
 
     result <- coxdev(eta, sample_weight)
+
+    event_cumsum <- reverse_cumsum_buffers[[1L]]
+    start_cumsum <- reverse_cumsum_buffers[[2L]]
+    risk_sums  <- risk_sum_buffers[[1L]]
+
     matvec <- function(arg) {
-      .hessian_matvec(as.numeric(arg),
-                      result$linear_predictor,
-                      result$sample_weight,
-                      risk_sum_buffers = risk_sum_buffers,
-                      diag_part_buffer = diag_part_buffer,
-                      w_avg_buffer = w_avg_buffer,
-                      exp_w_buffer = exp_w_buffer,
-                      event_cumsum = event_cumsum,
-                      start_cumsum = start_cumsum,
-                      event_order = event_order,
-                      start_order = start_order,
-                      status = status,
-                      first = first,
-                      last = last,
-                      scaling = scaling,
-                      event_map = event_map,
-                      start_map = start_map,
-                      risk_sum_buffers = risk_sum_buffers,
-                      forward_cumsum_buffers = forward_cumsum_buffers,
-                      forward_scratch_buffer = forward_scratch_buffer,
-                      reverse_cumsum_buffers = reverse_cumsum_buffers,
-                      hess_matvec_buffer = hess_matvec_buffer,
-                      have_start_times = have_start_times,
-                      efron = efron)
+      # Have to handle both a vector or a matrix
+      arg <- as.matrix(arg)
+      apply(arg, 2, function(x) .hessian_matvec(arg = x,
+                                                eta = result$linear_predictor,
+                                                sample_weight = result$sample_weight,
+                                                risk_sums = risk_sums,
+                                                diag_part = diag_part_buffer,
+                                                w_avg = w_avg_buffer,
+                                                exp_w = exp_w_buffer,
+                                                event_cumsum = event_cumsum,
+                                                start_cumsum = start_cumsum,
+                                                event_order = event_order,
+                                                start_order = start_order,
+                                                status = status,
+                                                first = first,
+                                                last = last,
+                                                scaling = scaling,
+                                                event_map = event_map,
+                                                start_map = start_map,
+                                                risk_sum_buffers = risk_sum_buffers,
+                                                forward_cumsum_buffers = forward_cumsum_buffers,
+                                                forward_scratch_buffer = forward_scratch_buffer,
+                                                reverse_cumsum_buffers = reverse_cumsum_buffers,
+                                                hess_matvec_buffer = hess_matvec_buffer,
+                                                have_start_times = have_start_times,
+                                                efron = efron))
     }
   }
+  list(coxdev = coxdev, information = information)
 }
