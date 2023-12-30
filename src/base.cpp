@@ -170,7 +170,7 @@ void sum_over_events(const EIGEN_REF<Eigen::VectorXi> event_order,
                      const EIGEN_REF<Eigen::VectorXd> scaling,
                      const EIGEN_REF<Eigen::VectorXi> status,
                      bool efron,
-                     BUFFER_LIST(forward_cumsum_buffers), // List of numpy arrays (1-d)
+                     BUFFER_LIST forward_cumsum_buffers, // List of numpy arrays (1-d)
 		     EIGEN_REF<Eigen::VectorXd> forward_scratch_buffer,
                      EIGEN_REF<Eigen::VectorXd> value_buffer)
 {
@@ -229,9 +229,9 @@ void sum_over_risk_set(const EIGEN_REF<Eigen::VectorXd> arg,
                        const EIGEN_REF<Eigen::VectorXi> event_map,
                        const EIGEN_REF<Eigen::VectorXd> scaling,
                        bool efron,
-                       BUFFER_LIST(risk_sum_buffers),
+                       BUFFER_LIST risk_sum_buffers,
 		       int risk_sum_buffers_offset,
-                       BUFFER_LIST(reverse_cumsum_buffers), // List of 1-d numpy arrays
+                       BUFFER_LIST reverse_cumsum_buffers, // List of 1-d numpy arrays
 		       int reverse_cumsum_buffers_offset) // starting index into buffer
 {
 
@@ -317,11 +317,11 @@ double cox_dev(const EIGEN_REF<Eigen::VectorXd> eta, //eta is in native order  -
 	       EIGEN_REF<Eigen::VectorXd> diag_hessian_buffer,
 	       EIGEN_REF<Eigen::VectorXd> diag_part_buffer,
 	       EIGEN_REF<Eigen::VectorXd> w_avg_buffer,
-	       BUFFER_LIST(event_reorder_buffers),
-	       BUFFER_LIST(risk_sum_buffers),
-	       BUFFER_LIST(forward_cumsum_buffers),
+	       BUFFER_LIST event_reorder_buffers,
+	       BUFFER_LIST risk_sum_buffers,
+	       BUFFER_LIST forward_cumsum_buffers,
 	       EIGEN_REF<Eigen::VectorXd> forward_scratch_buffer,
-	       BUFFER_LIST(reverse_cumsum_buffers),
+	       BUFFER_LIST reverse_cumsum_buffers,
 	       bool have_start_times = true,
 	       bool efron = false)
 {
@@ -397,22 +397,22 @@ double cox_dev(const EIGEN_REF<Eigen::VectorXd> eta, //eta is in native order  -
   }
 
   // event_cumsum: map first element of list into Eigen vector.
-#ifdef PY_INTERFACE 
-  MAP_BUFFER_LIST(reverse_cumsum_buffers, 0, event_cumsum, tmp5)
-#endif
-#ifdef R_INTERFACE
-  Rcpp::NumericVector tmp5 = Rcpp::as<Rcpp::NumericVector>(reverse_cumsum_buffers[0]);
-  Eigen::Map<Eigen::VectorXd> event_cumsum(Rcpp::as<Eigen::Map<Eigen::VectorXd>>(tmp5));  
-#endif    
+// #ifdef PY_INTERFACE 
+//   MAP_BUFFER_LIST(reverse_cumsum_buffers, 0, event_cumsum, tmp5)
+// #endif
+// #ifdef R_INTERFACE
+//   Rcpp::NumericVector tmp5 = Rcpp::as<Rcpp::NumericVector>(reverse_cumsum_buffers[0]);
+//   Eigen::Map<Eigen::VectorXd> event_cumsum(Rcpp::as<Eigen::Map<Eigen::VectorXd>>(tmp5));  
+// #endif    
 
   // start_cumsum: map second element of list into Eigen vector.
-#ifdef PY_INTERFACE 
-  MAP_BUFFER_LIST(reverse_cumsum_buffers, 1, start_cumsum, tmp6)    
-#endif
-#ifdef R_INTERFACE
-  Rcpp::NumericVector tmp6 = Rcpp::as<Rcpp::NumericVector>(reverse_cumsum_buffers[1]);
-  Eigen::Map<Eigen::VectorXd> start_cumsum(Rcpp::as<Eigen::Map<Eigen::VectorXd>>(tmp6));  
-#endif    
+// #ifdef PY_INTERFACE 
+//   MAP_BUFFER_LIST(reverse_cumsum_buffers, 1, start_cumsum, tmp6)    
+// #endif
+// #ifdef R_INTERFACE
+//   Rcpp::NumericVector tmp6 = Rcpp::as<Rcpp::NumericVector>(reverse_cumsum_buffers[1]);
+//   Eigen::Map<Eigen::VectorXd> start_cumsum(Rcpp::as<Eigen::Map<Eigen::VectorXd>>(tmp6));  
+// #endif    
 
   // forward_cumsum_buffers[0]: map first element of list into Eigen vector.
 #ifdef PY_INTERFACE 
@@ -618,13 +618,14 @@ HESSIAN_MATVEC_TYPE hessian_matvec(const EIGEN_REF<Eigen::VectorXd> arg, // # ar
 				   const EIGEN_REF<Eigen::VectorXd> scaling,
 				   const EIGEN_REF<Eigen::VectorXi> event_map,
 				   const EIGEN_REF<Eigen::VectorXi> start_map,
-				   BUFFER_LIST(risk_sum_buffers),
-				   BUFFER_LIST(forward_cumsum_buffers),
+				   BUFFER_LIST risk_sum_buffers,
+				   BUFFER_LIST forward_cumsum_buffers,
 				   EIGEN_REF<Eigen::VectorXd> forward_scratch_buffer,
-				   BUFFER_LIST(reverse_cumsum_buffers),
+				   BUFFER_LIST reverse_cumsum_buffers,
 				   EIGEN_REF<Eigen::VectorXd> hess_matvec_buffer,
 				   bool have_start_times = true,
-				   bool efron = false) {
+				   bool efron = false)
+{
   
   
   Eigen::VectorXd exp_w_times_arg = exp_w.array() * arg.array();

@@ -22,7 +22,7 @@
 namespace py = pybind11;
 #define EIGEN_REF Eigen::Ref
 #define ERROR_MSG(x) throw std::runtime_error(x)
-#define BUFFER_LIST(x) py::list &x 
+#define BUFFER_LIST py::list & // List of vectors for scratch space
 #define HESSIAN_MATVEC_TYPE void
 #define PREPROCESS_TYPE std::tuple<py::dict, Eigen::VectorXi, Eigen::VectorXi> 
 #endif
@@ -41,7 +41,7 @@ namespace py = pybind11;
 using namespace Rcpp;
 #define EIGEN_REF Eigen::Map
 #define ERROR_MSG(x) Rcpp::Rcerr << x
-#define BUFFER_LIST(x) Rcpp::List x // List of vectors for scratch space.
+#define BUFFER_LIST Rcpp::List // List of vectors for scratch space.
 #define HESSIAN_MATVEC_TYPE Eigen::VectorXd
 #define PREPROCESS_TYPE Rcpp::List
 #endif
