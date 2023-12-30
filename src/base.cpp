@@ -762,16 +762,10 @@ std::vector<int> lexsort(const Eigen::VectorXi & a,
  * This is best done in C++ also to avoid dealing with 1-based indexing in R  and 0-based indexing 
  * elsewhere.
  */
-#ifdef PY_INTERFACE
-std::tuple<py::dict, Eigen::VectorXi, Eigen::VectorXi> preprocess(const EIGEN_REF<Eigen::VectorXd> start,
-								  const EIGEN_REF<Eigen::VectorXd> event,
-								  const EIGEN_REF<Eigen::VectorXi> status)
-#endif
-#ifdef R_INTERFACE
-Rcpp::List preprocess(const EIGEN_REF<Eigen::VectorXd> start,
-		      const EIGEN_REF<Eigen::VectorXd> event,
-		      const EIGEN_REF<Eigen::VectorXi> status)
-#endif
+// [[Rcpp::export(.preprocess)]]
+PREPROCESS_TYPE preprocess(const EIGEN_REF<Eigen::VectorXd> start,
+			   const EIGEN_REF<Eigen::VectorXd> event,
+			   const EIGEN_REF<Eigen::VectorXi> status)
 {
   int nevent = status.size();
   Eigen::VectorXi ones = Eigen::VectorXi::Ones(nevent);
@@ -971,9 +965,9 @@ Rcpp::List preprocess(const EIGEN_REF<Eigen::VectorXd> start,
 
 }
 
-// pybind11 module stuff
 
 #ifdef PY_INTERFACE
+// pybind11 module stuff
 PYBIND11_MODULE(coxc, m) {
   m.doc() = "Cumsum implementations";
   m.def("forward_cumsum", &forward_cumsum, "Cumsum a vector");
