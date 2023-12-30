@@ -481,20 +481,19 @@ double cox_dev(const EIGEN_REF<Eigen::VectorXd> eta, //eta is in native order  -
   //# a 1 is added to all indices
 
   Eigen::VectorXd dummy; // dummy argument for use where None is used
+  Eigen::Map<Eigen::VectorXd> dummy_map(dummy.data(), dummy.size());  
 #ifdef PY_INTERFACE  
-  forward_prework(status, w_avg_buffer, scaling, risk_sums, 0, 1, forward_scratch_buffer, MAKE_MAP_Xd(dummy), true);
+  forward_prework(status, w_avg_buffer, scaling, risk_sums, 0, 1, forward_scratch_buffer, dummy_map, true);
   Eigen::Ref<Eigen::VectorXd> A_01 = forward_scratch_buffer; // Make a reference rather than a copy
   forward_cumsum(A_01, forward_cumsum_buffers0); // length=n+1 
   Eigen::Ref<Eigen::VectorXd> C_01 = forward_cumsum_buffers0; // Make a reference rather than a copy
   
-  forward_prework(status, w_avg_buffer, scaling, risk_sums, 0, 2, forward_scratch_buffer, MAKE_MAP_Xd(dummy), true);
+  forward_prework(status, w_avg_buffer, scaling, risk_sums, 0, 2, forward_scratch_buffer, dummy_map, true);
   Eigen::Ref<Eigen::VectorXd> A_02 = forward_scratch_buffer; // Make a reference rather than a copy
   forward_cumsum(A_02, forward_cumsum_buffers1); // # length=n+1
   Eigen::Ref<Eigen::VectorXd> C_02 = forward_cumsum_buffers1; // Make a reference rather than a copy
 #endif
 #ifdef R_INTERFACE
-  Eigen::Map<Eigen::VectorXd> dummy_map(dummy.data(), dummy.size());
-  
   forward_prework(status, w_avg_buffer, scaling, risk_sums, 0, 1, forward_scratch_buffer, dummy_map, true);
   Eigen::Map<Eigen::VectorXd> A_01 = forward_scratch_buffer; // Make a reference rather than a copy
   forward_cumsum(A_01, forward_cumsum_buffers0); // length=n+1 
@@ -527,17 +526,17 @@ double cox_dev(const EIGEN_REF<Eigen::VectorXd> eta, //eta is in native order  -
   } else {
     // # compute the other necessary cumsums
 #ifdef PY_INTERFACE 
-    forward_prework(status, w_avg_buffer, scaling, risk_sums, 1, 1, forward_scratch_buffer, MAKE_MAP_Xd(dummy), true);
+    forward_prework(status, w_avg_buffer, scaling, risk_sums, 1, 1, forward_scratch_buffer, dummy_map, true);
     Eigen::Ref<Eigen::VectorXd> A_11 = forward_scratch_buffer; // Make a reference rather than a copy
     forward_cumsum(A_11, forward_cumsum_buffers2); // # length=n+1
     Eigen::Ref<Eigen::VectorXd> C_11 = forward_cumsum_buffers2; // Make a reference rather than a copy
 
-    forward_prework(status, w_avg_buffer, scaling, risk_sums, 2, 1, forward_scratch_buffer, MAKE_MAP_Xd(dummy), true);
+    forward_prework(status, w_avg_buffer, scaling, risk_sums, 2, 1, forward_scratch_buffer, dummy_map, true);
     Eigen::Ref<Eigen::VectorXd> A_21 = forward_scratch_buffer; // Make a reference rather than a copy
     forward_cumsum(A_21, forward_cumsum_buffers3); // # length=n+1
     Eigen::Ref<Eigen::VectorXd> C_21 = forward_cumsum_buffers3; // Make a reference rather than a copy
 
-    forward_prework(status, w_avg_buffer, scaling, risk_sums, 2, 2, forward_scratch_buffer, MAKE_MAP_Xd(dummy), true);
+    forward_prework(status, w_avg_buffer, scaling, risk_sums, 2, 2, forward_scratch_buffer, dummy_map, true);
     Eigen::Ref<Eigen::VectorXd> A_22 = forward_scratch_buffer; // Make a reference rather than a copy
     forward_cumsum(A_22, forward_cumsum_buffers4); // # length=n+1
     Eigen::Ref<Eigen::VectorXd> C_22 = forward_cumsum_buffers4; // Make a reference rather than a copy
@@ -693,19 +692,11 @@ HESSIAN_MATVEC_TYPE hessian_matvec(const EIGEN_REF<Eigen::VectorXd> arg, // # ar
 		    hess_matvec_buffer);
   } else {
     Eigen::VectorXi dummy;
-#ifdef R_INTERFACE
-    Eigen::Map<Eigen::VectorXi> dummy_map(dummy.data(), dummy.size());    
-#endif    
     sum_over_events(event_order,
 		    start_order,
 		    first,
 		    last,
-#ifdef PY_INTERFACE
                     MAKE_MAP_Xi(dummy),
-#endif    
-#ifdef R_INTERFACE
-                    dummy_map,
-#endif    
 		    scaling,
 		    status,
 		    efron,
