@@ -2,6 +2,9 @@
 #include <iostream>
 #endif
 
+#define MAKE_MAP_Xd(y) Eigen::Map<Eigen::VectorXd>((y).data(), (y).size())
+#define MAKE_MAP_Xi(y) Eigen::Map<Eigen::VectorXi>((y).data(), (y).size())
+
 #ifdef PY_INTERFACE
 
 #include <cstddef>
