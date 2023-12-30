@@ -22,7 +22,7 @@
 }
 
 .compute_sat_loglik <- function(first, last, weight, event_order, status, W_status) {
-    .Call(`_coxdev_compute_sat_loglik`, first, last, weight, event_order, status, W_status, PACKAGE="coxdev")
+    .Call(`_coxdev_compute_sat_loglik`, first, last, weight, event_order, status, W_status)
 }
 
 .sum_over_events <- function(event_order, start_order, first, last, start_map, scaling, status, efron, forward_cumsum_buffers, forward_scratch_buffer, value_buffer) {
@@ -38,6 +38,10 @@
 }
 
 .hessian_matvec <- function(arg, eta, sample_weight, risk_sums, diag_part, w_avg, exp_w, event_cumsum, start_cumsum, event_order, start_order, status, first, last, scaling, event_map, start_map, risk_sum_buffers, forward_cumsum_buffers, forward_scratch_buffer, reverse_cumsum_buffers, hess_matvec_buffer, have_start_times = TRUE, efron = FALSE) {
-    invisible(.Call(`_coxdev_hessian_matvec`, arg, eta, sample_weight, risk_sums, diag_part, w_avg, exp_w, event_cumsum, start_cumsum, event_order, start_order, status, first, last, scaling, event_map, start_map, risk_sum_buffers, forward_cumsum_buffers, forward_scratch_buffer, reverse_cumsum_buffers, hess_matvec_buffer, have_start_times, efron))
+    .Call(`_coxdev_hessian_matvec`, arg, eta, sample_weight, risk_sums, diag_part, w_avg, exp_w, event_cumsum, start_cumsum, event_order, start_order, status, first, last, scaling, event_map, start_map, risk_sum_buffers, forward_cumsum_buffers, forward_scratch_buffer, reverse_cumsum_buffers, hess_matvec_buffer, have_start_times, efron)
+}
+
+.preprocess <- function(start, event, status) {
+    .Call(`_coxdev_preprocess`, start, event, status)
 }
 
