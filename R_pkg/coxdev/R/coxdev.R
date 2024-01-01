@@ -1,113 +1,113 @@
-#' @export
-preprocess <- function(start, event, status) {
-  # Convert inputs to vectors
-  ## start <- as.numeric(start)
-  ## event <- as.numeric(event)
-  ## status <- as.numeric(status)
-  nevent <- length(status)
+## #' @export
+## preprocess <- function(start, event, status) {
+##   # Convert inputs to vectors
+##   start <- as.numeric(start)
+##   event <- as.numeric(event)
+##   status <- as.numeric(status)
+##   nevent <- length(status)
 
-  # Perform stacking of arrays
-  stacked_time <- c(start, event)
-  stacked_status_c <- c(rep(1, nevent), 1 - status) # complement of status
-  stacked_is_start <- c(rep(1, nevent), rep(0, nevent))
-  stacked_index <- c(seq_len(nevent), seq_len(nevent))
+##   # Perform stacking of arrays
+##   stacked_time <- c(start, event)
+##   stacked_status_c <- c(rep(1, nevent), 1 - status) # complement of status
+##   stacked_is_start <- c(rep(1, nevent), rep(0, nevent))
+##   stacked_index <- c(seq_len(nevent), seq_len(nevent))
 
-  # Perform the joint sort
-  order_indices <- order(stacked_time, stacked_status_c, stacked_is_start)
-  sorted_time <- stacked_time[order_indices]
-  sorted_status <- 1 - stacked_status_c[order_indices]
-  sorted_is_start <- stacked_is_start[order_indices]
-  sorted_index <- stacked_index[order_indices]
+##   # Perform the joint sort
+##   order_indices <- order(stacked_time, stacked_status_c, stacked_is_start)
+##   sorted_time <- stacked_time[order_indices]
+##   sorted_status <- 1 - stacked_status_c[order_indices]
+##   sorted_is_start <- stacked_is_start[order_indices]
+##   sorted_index <- stacked_index[order_indices]
 
-  # Initialize variables for loop
-  event_count <- 0
-  start_count <- 0
-  event_order <- numeric(0)
-  start_order <- numeric(0)
-  start_map <- numeric(0)
-  event_map <- numeric(0)
-  first <- numeric(0)
-  which_event <- -1
-  first_event <- -1
-  num_successive_event <- 1
-  last_row <- NULL
+##   # Initialize variables for loop
+##   event_count <- 0
+##   start_count <- 0
+##   event_order <- numeric(0)
+##   start_order <- numeric(0)
+##   start_map <- numeric(0)
+##   event_map <- numeric(0)
+##   first <- numeric(0)
+##   which_event <- -1
+##   first_event <- -1
+##   num_successive_event <- 1
+##   last_row <- NULL
 
-  # Loop through sorted data
-  for (i in seq_along(sorted_time)) {
-    s_time <- sorted_time[i]
-    s_status <- sorted_status[i]
-    s_is_start <- sorted_is_start[i]
-    s_index <- sorted_index[i]
+##   # Loop through sorted data
+##   for (i in seq_along(sorted_time)) {
+##     s_time <- sorted_time[i]
+##     s_status <- sorted_status[i]
+##     s_is_start <- sorted_is_start[i]
+##     s_index <- sorted_index[i]
 
-    if (s_is_start == 1) {
-      start_order <- c(start_order, s_index)
-      start_map <- c(start_map, event_count)
-      start_count <- start_count + 1
-    } else {
-      if (s_status == 1) {
-        if (!is.null(last_row) && s_time != last_row[1]) {
-          first_event <- first_event + num_successive_event
-          num_successive_event <- 1
-          which_event <- which_event + 1
-        } else {
-          num_successive_event <- num_successive_event + 1
-        }
-        first <- c(first, first_event)
-      } else {
-        first_event <- first_event + num_successive_event
-        num_successive_event <- 1
-        first <- c(first, first_event)
-      }
+##     if (s_is_start == 1) {
+##       start_order <- c(start_order, s_index)
+##       start_map <- c(start_map, event_count)
+##       start_count <- start_count + 1
+##     } else {
+##       if (s_status == 1) {
+##         if (!is.null(last_row) && s_time != last_row[1]) {
+##           first_event <- first_event + num_successive_event
+##           num_successive_event <- 1
+##           which_event <- which_event + 1
+##         } else {
+##           num_successive_event <- num_successive_event + 1
+##         }
+##         first <- c(first, first_event)
+##       } else {
+##         first_event <- first_event + num_successive_event
+##         num_successive_event <- 1
+##         first <- c(first, first_event)
+##       }
 
-      event_map <- c(event_map, start_count)
-      event_order <- c(event_order, s_index)
-      event_count <- event_count + 1
-    }
-    last_row <- c(s_time, s_status, s_is_start, s_index)
-  }
+##       event_map <- c(event_map, start_count)
+##       event_order <- c(event_order, s_index)
+##       event_count <- event_count + 1
+##     }
+##     last_row <- c(s_time, s_status, s_is_start, s_index)
+##   }
 
-  # Reset start_map to original order and set to event order
-  start_map_cp <- start_map
-  start_map[start_order] <- start_map_cp
+##   # Reset start_map to original order and set to event order
+##   start_map_cp <- start_map
+##   start_map[start_order] <- start_map_cp
 
-  s_status <- status[event_order]
-  s_first <- first
-  s_start_map <- start_map[event_order]
-  s_event_map <- event_map
+##   s_status <- status[event_order]
+##   s_first <- first
+##   s_start_map <- start_map[event_order]
+##   s_event_map <- event_map
 
-  s_event <- event[event_order]
-  s_start <- event[start_order]
+##   s_event <- event[event_order]
+##   s_start <- event[start_order]
 
-  # Compute `last`
-  last <- numeric(0)
-  last_event <- nevent - 1
-  s_first_len <- length(s_first)
-  for (i in seq_along(s_first)) {
-    f <- s_first[s_first_len - i + 1]
-    last <- c(last, last_event)
-    if (f - (nevent - i) == 0) {
-      last_event <- f - 1
-    }
-  }
-  s_last <- rev(last)
+##   # Compute `last`
+##   last <- numeric(0)
+##   last_event <- nevent - 1
+##   s_first_len <- length(s_first)
+##   for (i in seq_along(s_first)) {
+##     f <- s_first[s_first_len - i + 1]
+##     last <- c(last, last_event)
+##     if (f - (nevent - i) == 0) {
+##       last_event <- f - 1
+##     }
+##   }
+##   s_last <- rev(last)
 
-  den <- s_last + 1 - s_first
-  s_scaling <- (seq_len(nevent) - 1 - s_first) / den
+##   den <- s_last + 1 - s_first
+##   s_scaling <- (seq_len(nevent) - 1 - s_first) / den
 
-  # Prepare the output list
-  preproc <- list(
-    start = s_start,
-    event = s_event,
-    first = s_first,
-    last = s_last,
-    scaling = s_scaling,
-    start_map = s_start_map,
-    event_map = s_event_map,
-    status = s_status
-  )
+##   # Prepare the output list
+##   preproc <- list(
+##     start = s_start,
+##     event = s_event,
+##     first = s_first,
+##     last = s_last,
+##     scaling = s_scaling,
+##     start_map = s_start_map,
+##     event_map = s_event_map,
+##     status = s_status
+##   )
 
-  return(list(preproc, event_order, start_order))
-}
+##   return(list(preproc, event_order, start_order))
+## }
 
 #' Make cox deviance object
 #' @param event the event vector
@@ -125,9 +125,8 @@ make_cox_deviance <- function(event,
   tie_breaking  <- match.arg(tie_breaking)
 
   event <- as.numeric(event)
-  status <- as.integer(status)
   nevent <- length(event)
-
+  status <- as.integer(status)
   if (is.na(start)) {
     start <- rep(-Inf, nevent)
     have_start_times <- FALSE
@@ -136,12 +135,11 @@ make_cox_deviance <- function(event,
     have_start_times <- TRUE
   }
 
-  prep_result  <- preprocess(start, event, status)
-  preproc  <- prep_result[[1]]
-  event_order  <- as.integer(prep_result[[2]])  - 1L  ## for C 0-based indexing!
-  start_order  <- as.integer(prep_result[[3]])  - 1L  ## for C 0-based indexing!
+  prep_result  <- .preprocess(start, event, status)
+  preproc  <- prep_result[[1L]]
+  event_order  <- as.integer(prep_result[[2L]])##  - 1L  ## for C 0-based indexing!
+  start_order  <- as.integer(prep_result[[3L]])##  - 1L  ## for C 0-based indexing!
   efron  <- (tie_breaking == 'efron') && (norm(matrix(preproc$scaling), "2") > 0)
-  ## preproc sorts things, so we need its version of status, event etc.
   status <- preproc[['status']]
   event <- preproc[['event']]
   start <- preproc[['start']]
@@ -150,7 +148,7 @@ make_cox_deviance <- function(event,
   scaling <- preproc[['scaling']]
   event_map <- preproc[['event_map']]
   start_map <- preproc[['start_map']]
-  first_start <- first[start_map] ## This is used only for the check just below
+  first_start <- first[start_map]  ## Only used for next check!
 
   if (!all(first_start == start_map)) {
     stop('first_start disagrees with start_map')
@@ -228,7 +226,7 @@ make_cox_deviance <- function(event,
   }
   information  <- function(eta, sample_weight = NULL) {
 
-    result <- coxdev(eta, sample_weight)
+    coxdev_result <- coxdev(eta, sample_weight)
 
     event_cumsum <- reverse_cumsum_buffers[[1L]]
     start_cumsum <- reverse_cumsum_buffers[[2L]]
@@ -237,31 +235,36 @@ make_cox_deviance <- function(event,
     matvec <- function(arg) {
       # Have to handle both a vector or a matrix
       arg <- as.matrix(arg)
-      apply(arg, 2, function(x) .hessian_matvec(arg = x,
-                                                eta = result$linear_predictor,
-                                                sample_weight = result$sample_weight,
-                                                risk_sums = risk_sums,
-                                                diag_part = diag_part_buffer,
-                                                w_avg = w_avg_buffer,
-                                                exp_w = exp_w_buffer,
-                                                event_cumsum = event_cumsum,
-                                                start_cumsum = start_cumsum,
-                                                event_order = event_order,
-                                                start_order = start_order,
-                                                status = status,
-                                                first = first,
-                                                last = last,
-                                                scaling = scaling,
-                                                event_map = event_map,
-                                                start_map = start_map,
-                                                risk_sum_buffers = risk_sum_buffers,
-                                                forward_cumsum_buffers = forward_cumsum_buffers,
-                                                forward_scratch_buffer = forward_scratch_buffer,
-                                                reverse_cumsum_buffers = reverse_cumsum_buffers,
-                                                hess_matvec_buffer = hess_matvec_buffer,
-                                                have_start_times = have_start_times,
-                                                efron = efron))
+      result  <- vector("list", length = ncol(arg))
+      for (j in seq_along(result)) {
+        result[[j]]  <- .hessian_matvec(arg = arg[, j],
+                                        eta = coxdev_result$linear_predictor,
+                                        sample_weight = coxdev_result$sample_weight,
+                                        risk_sums = risk_sums,
+                                        diag_part = diag_part_buffer,
+                                        w_avg = w_avg_buffer,
+                                        exp_w = exp_w_buffer,
+                                        event_cumsum = event_cumsum,
+                                        start_cumsum = start_cumsum,
+                                        event_order = event_order,
+                                        start_order = start_order,
+                                        status = status,
+                                        first = first,
+                                        last = last,
+                                        scaling = scaling,
+                                        event_map = event_map,
+                                        start_map = start_map,
+                                        risk_sum_buffers = risk_sum_buffers,
+                                        forward_cumsum_buffers = forward_cumsum_buffers,
+                                        forward_scratch_buffer = forward_scratch_buffer,
+                                        reverse_cumsum_buffers = reverse_cumsum_buffers,
+                                        hess_matvec_buffer = hess_matvec_buffer,
+                                        have_start_times = have_start_times,
+                                        efron = efron)
+      }
+      do.call(cbind, result)
     }
+    matvec
   }
   list(coxdev = coxdev, information = information)
 }
