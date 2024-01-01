@@ -629,8 +629,10 @@ HESSIAN_MATVEC_TYPE hessian_matvec(const EIGEN_REF<Eigen::VectorXd> arg, // # ar
   
   
   Eigen::VectorXd exp_w_times_arg = exp_w.array() * arg.array();
-  
+
+  Rcpp::Rcout << "step 1" << std::endl;
   if (have_start_times) {
+    Rcpp::Rcout << "step 1a" << std::endl;    
     // # now in event_order
     sum_over_risk_set(MAKE_MAP_Xd(exp_w_times_arg), // # in native order
 		      event_order,
@@ -645,13 +647,15 @@ HESSIAN_MATVEC_TYPE hessian_matvec(const EIGEN_REF<Eigen::VectorXd> arg, // # ar
 		      reverse_cumsum_buffers,
 		      2); // offset from index 2 of reverse_cumsum_buffers 
   } else {
+    Rcpp::Rcout << "step 1b" << std::endl;    
     Eigen::VectorXi dummy;
+    Eigen::Map<Eigen::VectorXi> dummy_map(dummy.data(), dummy.size());        
     sum_over_risk_set(MAKE_MAP_Xd(exp_w_times_arg), // # in native order
 		      event_order,
 		      start_order,
 		      first,
 		      last,
-		      MAKE_MAP_Xi(dummy),
+		      dummy_map,
 		      scaling,
 		      efron,
 		      risk_sum_buffers,
@@ -659,6 +663,7 @@ HESSIAN_MATVEC_TYPE hessian_matvec(const EIGEN_REF<Eigen::VectorXd> arg, // # ar
 		      reverse_cumsum_buffers,
 		      2);// offset from index 2 of reverse_cumsum_buffers 
   }
+  Rcpp::Rcout << "step 2" << std::endl;  
   // risk_sums_arg: map second element of list into Eigen vector.
 #ifdef PY_INTERFACE 
   MAP_BUFFER_LIST(risk_sum_buffers, 1, risk_sums_arg, tmp1)
@@ -668,12 +673,14 @@ HESSIAN_MATVEC_TYPE hessian_matvec(const EIGEN_REF<Eigen::VectorXd> arg, // # ar
   Eigen::Map<Eigen::VectorXd> risk_sums_arg(Rcpp::as<Eigen::Map<Eigen::VectorXd>>(tmp1));  
 #endif    
 
+  Rcpp::Rcout << "step 3" << std::endl;    
   // # E_arg = risk_sums_arg / risk_sums -- expecations under the probabilistic interpretation
   // # forward_scratch_buffer[:] = status * w_avg * E_arg / risk_sums
 
   // # one less step to compute from above representation
   forward_scratch_buffer = ( status.cast<double>().array() * w_avg.array() * risk_sums_arg.array() ) / risk_sums.array().pow(2);
 
+  Rcpp::Rcout << "step 4" << std::endl;    
 #ifdef DEBUG
   std::cout << "forward_scratch_buffer" << std::endl;
   std::cout << forward_scratch_buffer << std::endl;
@@ -705,29 +712,25 @@ HESSIAN_MATVEC_TYPE hessian_matvec(const EIGEN_REF<Eigen::VectorXd> arg, // # ar
 		    forward_scratch_buffer,
 		    hess_matvec_buffer);
   }
-
+  Rcpp::Rcout << "step 5" << std::endl;  
 #ifdef DEBUG
   std::cout << "hess_matvec_buffer" << std::endl;
   std::cout << hess_matvec_buffer << std::endl;
 #endif
   
   to_native_from_event(hess_matvec_buffer, event_order, forward_scratch_buffer);
-
+  Rcpp::Rcout << "step 6" << std::endl;  
   // Eigen::VectorXd buffer = hess_matvec_buffer.array() * exp_w.array();
-#ifdef PY_INTERFACE  
-  hess_matvec_buffer = hess_matvec_buffer.array() * exp_w.array() - (diag_part.array() * arg.array());
+  hess_matvec_buffer = hess_matvec_buffer.array() * exp_w.array() - (diag_part.array() * arg.array());  
 #ifdef DEBUG
   std::cout << "hess_matvec_buffer" << std::endl;
   std::cout << hess_matvec_buffer << std::endl;
 #endif
-#endif
 #ifdef R_INTERFACE  
-  Eigen::VectorXd result = hess_matvec_buffer.array() * exp_w.array() - (diag_part.array() * arg.array());
-#ifdef DEBUG
   std::cout << "hess_matvec_buffer" << std::endl;
-  std::cout << result << std::endl;
-#endif
-  return(result);
+  std::cout << hess_matvec_buffer << std::endl;
+  Rcpp::Rcout << "Just before return" << std::endl;
+  return(Rcpp::wrap(hess_matvec_buffer));
 #endif
 }
 

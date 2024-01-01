@@ -42,7 +42,7 @@ using namespace Rcpp;
 #define EIGEN_REF Eigen::Map
 #define ERROR_MSG(x) Rcpp::Rcerr << x
 #define BUFFER_LIST Rcpp::List // List of vectors for scratch space.
-#define HESSIAN_MATVEC_TYPE Eigen::VectorXd
+#define HESSIAN_MATVEC_TYPE SEXP
 #define PREPROCESS_TYPE Rcpp::List
 #endif
 

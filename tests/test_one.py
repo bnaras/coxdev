@@ -137,6 +137,7 @@ def test_coxph(tie_types = all_combos[100],
 
     H = coxdev.information(eta,
                            weight)
+    hh = H @ X
     I = X.T @ (H @ X)
     assert np.allclose(I, I.T)
     cov_ = np.linalg.inv(I)
@@ -157,9 +158,9 @@ def test_coxph(tie_types = all_combos[100],
     delta_ph = np.linalg.norm(G_coxph - X.T @ C.gradient) / np.linalg.norm(X.T @ C.gradient)
     assert delta_ph < tol
     assert np.linalg.norm(cov_ - cov_coxph) / np.linalg.norm(cov_) < tol
-    return C
+    return C, hh
 
-m = test_coxph()
+C, H = test_coxph()
 import pickle   
 
 # fileObj = open('data.obj', 'rb')

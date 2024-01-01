@@ -36,5 +36,6 @@ eta  <- X %*% beta
 
 C <- cox_deviance$coxdev(X %*% beta, weights)
 
-#H  <- cox_deviance$information(X %*% beta, weights)
-#w <- H(X)
+H  <- cox_deviance$information(X %*% beta, weights)
+debug(H)
+w <- H(X)

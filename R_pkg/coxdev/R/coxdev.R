@@ -1,9 +1,9 @@
 #' @export
 preprocess <- function(start, event, status) {
   # Convert inputs to vectors
-  start <- as.numeric(start)
-  event <- as.numeric(event)
-  status <- as.numeric(status)
+  ## start <- as.numeric(start)
+  ## event <- as.numeric(event)
+  ## status <- as.numeric(status)
   nevent <- length(status)
 
   # Perform stacking of arrays
@@ -125,12 +125,14 @@ make_cox_deviance <- function(event,
   tie_breaking  <- match.arg(tie_breaking)
 
   event <- as.numeric(event)
+  status <- as.integer(status)
   nevent <- length(event)
-  status <- as.numeric(status)
+
   if (is.na(start)) {
     start <- rep(-Inf, nevent)
     have_start_times <- FALSE
   } else {
+    start  <- as.numeric(start)
     have_start_times <- TRUE
   }
 
@@ -139,15 +141,16 @@ make_cox_deviance <- function(event,
   event_order  <- as.integer(prep_result[[2]])  - 1L  ## for C 0-based indexing!
   start_order  <- as.integer(prep_result[[3]])  - 1L  ## for C 0-based indexing!
   efron  <- (tie_breaking == 'efron') && (norm(matrix(preproc$scaling), "2") > 0)
-  status <- as.numeric(preproc[['status']])
-  event <- as.numeric(preproc[['event']])
-  start <- as.numeric(preproc[['start']])
-  first <- as.integer(preproc[['first']])
-  last <- as.integer(preproc[['last']])
-  scaling <- as.numeric(preproc[['scaling']])
-  event_map <- as.integer(preproc[['event_map']])
-  start_map <- as.integer(preproc[['start_map']])
-  first_start <- first[start_map]
+  ## preproc sorts things, so we need its version of status, event etc.
+  status <- preproc[['status']]
+  event <- preproc[['event']]
+  start <- preproc[['start']]
+  first <- preproc[['first']]
+  last <- preproc[['last']]
+  scaling <- preproc[['scaling']]
+  event_map <- preproc[['event_map']]
+  start_map <- preproc[['start_map']]
+  first_start <- first[start_map] ## This is used only for the check just below
 
   if (!all(first_start == start_map)) {
     stop('first_start disagrees with start_map')
@@ -167,7 +170,7 @@ make_cox_deviance <- function(event,
   # reverse_cumsum_buffers = np.zeros((4, n+1))
   reverse_cumsum_buffers <- lapply(seq_len(4), function(x) numeric(n + 1))
   # risk_sum_buffers = np.zeros((2, n))
-  risk_sum_buffers <- list(numeric(n), function(x) numeric(n))
+  risk_sum_buffers <- list(numeric(n), numeric(n))
   hess_matvec_buffer <- numeric(n)
   grad_buffer <- numeric(n)
   diag_hessian_buffer <- numeric(n)
